@@ -4,7 +4,7 @@ from smart_m3.m3_kp import *
 import socket
 import sys
 from termcolor import colored
-from sib import SIBLib
+from lib import SIBLib
 from xml.etree import ElementTree as ET
 from lib import SSAPLib
 
