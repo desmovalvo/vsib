@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import sys
 from termcolor import colored
 from xml.etree import ElementTree as ET
 import subprocess
+import sys
 
 # constants
 CONF_FILE = "../vsib_configuration.xml"
@@ -36,3 +36,21 @@ for r in rsib.keys():
     command = ["sib-tcp", "-p", str(rsib[r]["port"])]
     subprocess.Popen(command)
 
+# waiting for the quit signal
+while True:
+    try:
+        cmd = raw_input('> ')
+        if cmd == "quit":
+            
+            # find and kill existing sibs
+            subprocess.call(["killall", "-9", "sib-tcp"])
+            subprocess.call(["killall", "-9", "redsibd"])
+            sys.exit(0)
+
+    except EOFError:
+        
+        # find and kill existing sibs
+        subprocess.call(["killall", "-9", "sib-tcp"])
+        subprocess.call(["killall", "-9", "redsibd"])
+        sys.exit(0)
+    
