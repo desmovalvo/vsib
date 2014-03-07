@@ -5,30 +5,16 @@ import socket
 import sys
 from termcolor import colored
 from sib import SIBLib
+from xml.etree import ElementTree as ET
+from lib import SSAPLib
 
+CONFIG_FILE = 'vsib_configuration.xml'
 TCP_IP = '127.0.0.1'
 TCP_PORT = 10010
 BUFFER_SIZE = 1024  # Normally 1024, but we want fast response
 
-# XML parser
-from xml.etree import ElementTree as ET
-
-### SSAP PROTOCOL DATA ###
-SSAP_MESSAGE_TEMPLATE = '''
-<SSAP_message>
-<node_id>%s</node_id>
-<space_id>%s</space_id>
-<transaction_type>%s</transaction_type>
-<message_type>CONFIRM</message_type>
-<transaction_id>%s</transaction_id>
-%s
-</SSAP_message>'''
-
-SSAP_JOIN_PARAM_TEMPLATE = '<parameter name = "status">%s</parameter>'
-### END SSAP PROTOCOL DATA ###
-
 # read the configuration file to see the real SIBs
-tree = ET.parse('vsib_configuration.xml')
+tree = ET.parse(CONFIG_FILE)
 root = tree.getroot()
 
 # create and fill a dict to store the info about real SIBs
@@ -39,16 +25,19 @@ for r in root.findall('SIB'):
     rsib[sib_name]["IP"] = r.find('IP').text
     rsib[sib_name]["port"] = int(r.find('port').text)
     rsib[sib_name]["type"] = r.find('type').text
-    print colored("virtualSIB> ", "red", attrs=["bold"]) + "Found a " + rsib[sib_name]["type"] + " sib with IP " + rsib[sib_name]["IP"] + " and port " + str(rsib[sib_name]["port"])
+    print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Found a " + rsib[sib_name]["type"] + " sib with IP " + rsib[sib_name]["IP"] + " and port " + str(rsib[sib_name]["port"])
 
 # connection to the SIBs
 nodes = {}
 for r in rsib.keys():
-    print colored("virtualSIB> ", "red", attrs=["bold"]) + "Connecting to " + r
+    print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Connecting to " + r
     nodes[r] = SIBLib.SibLib(rsib[r]["IP"], rsib[r]["port"])
-    nodes[r].join_sib()
-    
-sys.exit()
+    try:
+        nodes[r].join_sib()
+        rsib[r]["state"] = "online"
+    except socket.error:
+        print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
+        rsib[r]["state"] = "offline"
     
 # initialization of the TCP socket
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -76,13 +65,14 @@ while 1:
 
     # send a reply to the client
     if info["transaction_type"] == "JOIN":
-        reply = [SSAP_MESSAGE_TEMPLATE%(info["node_id"], info["space_id"],
-                                        "JOIN", info["transaction_id"],
-                                        SSAP_JOIN_PARAM_TEMPLATE%("m3:Success"))]
+        reply = SSAPLib.reply_to_join(info["node_id"], 
+                                      info["space_id"],
+                                      info["transaction_id"])
+
     elif info["transaction_type"] == "LEAVE":
-        reply = [SSAP_MESSAGE_TEMPLATE%(info["node_id"], info["space_id"],
-                                        "LEAVE", info["transaction_id"],
-                                        SSAP_JOIN_PARAM_TEMPLATE%("m3:Success"))]
+        reply = SSAPLib.reply_to_leave(info["node_id"], 
+                                      info["space_id"],
+                                      info["transaction_id"])
         
     reply_msg = "".join(reply)
     conn.send(reply_msg)
