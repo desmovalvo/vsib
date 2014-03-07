@@ -26,7 +26,7 @@ def reply_to_join(self, node_id, space_id, transaction_id):
 
 ### The following method is used to send a confirmation
 ### to the JOIN request sent by the client
-def reply_to_join(self, node_id, space_id, transaction_id):
+def reply_to_leave(self, node_id, space_id, transaction_id):
     reply = [SSAP_MESSAGE_TEMPLATE%(node_id, 
                                     space_id, 
                                     "LEAVE",
