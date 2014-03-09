@@ -36,6 +36,7 @@ for r in rsib.keys():
     command = ["sib-tcp", "-p", str(rsib[r]["port"])]
     subprocess.Popen(command)
 
+	
 # waiting for the quit signal
 while True:
     try:

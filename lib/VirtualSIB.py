@@ -7,7 +7,7 @@ import sys
 from termcolor import colored
 from lib import SIBLib
 from xml.etree import ElementTree as ET
-from lib import SSAPLib
+import SSAPLib
 
 # constants
 CONFIG_FILE = 'vsib_configuration.xml'
@@ -42,27 +42,26 @@ class VirtualSIB:
         root = tree.getroot()
         
         # create and fill a dict to store the info about real SIBs
-        rsib = {}
+        self.rsib = {}
         for r in root.findall('SIB'):
             sib_name = r.find('name').text
-            rsib[sib_name] = {}
-            rsib[sib_name]["IP"] = r.find('IP').text
-            rsib[sib_name]["port"] = int(r.find('port').text)
-            rsib[sib_name]["type"] = r.find('type').text
-            print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Found a " + rsib[sib_name]["type"] + " sib with IP " + rsib[sib_name]["IP"] + " and port " + str(rsib[sib_name]["port"])
+            self.rsib[sib_name] = {}
+            self.rsib[sib_name]["IP"] = r.find('IP').text
+            self.rsib[sib_name]["port"] = int(r.find('port').text)
+            self.rsib[sib_name]["type"] = r.find('type').text
+            print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Found a " + self.rsib[sib_name]["type"] + " sib with IP " + self.rsib[sib_name]["IP"] + " and port " + str(self.rsib[sib_name]["port"])
         
         # connection to the SIBs
-        nodes = {}
-        for r in rsib.keys():
-            print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Connecting to " + r
-            nodes[r] = SIBLib.SibLib(rsib[r]["IP"], rsib[r]["port"])
+        self.nodes = {}
+        for r in self.rsib.keys():
+            print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Connecting to " + r + "(port: " + str(self.rsib[r]["port"]) + ")"            
+            self.nodes[r] = SIBLib.SibLib(self.rsib[r]["IP"], self.rsib[r]["port"])
             try:
-                nodes[r].join_sib()
-                rsib[r]["state"] = "online"
+                self.nodes[r].join_sib()
+                self.rsib[r]["state"] = "online"
             except socket.error:
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
-                rsib[r]["state"] = "offline"
-
+                self.rsib[r]["state"] = "offline"
 
     def react_to_message(self, xml, conn, addr):
 
@@ -147,16 +146,56 @@ class VirtualSIB:
 
             # TODO: read information about the data inserted
             # TODO: check whether insertion is forbidden
-            if WRITE_ENABLED:
+            if self.write_enabled:
                 
                 reply = SSAPLib.reply_to_insert(None,
                                                 info["node_id"], 
                                                 info["space_id"],
-                                                info["transaction_id"])
+                                                info["transaction_id"],
+                                                self.write_enabled)
 
-                # TODO: insertion on the real SIBs
-#                print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " inserted a triple in the virtual SIB"
-                print colored("virtualSIB> ", "red", attrs=["bold"]) + "insertion is enabled but non yet implemented."
+                ###################################
+                # insertion on the real SIBs
+                # make the list of triples to insert
+                triples={}
+                for r in root.findall('parameter'):
+                    if r.get("name")=="insert_graph":
+                        for tl in r.findall('triple_list'):
+                            triple_id = 0
+                            triple_list = []
+                            for t in tl.findall('triple'):
+                                # TODO: togliere questa struttura e usare delle variabili locali e riempire direttamente triple_list
+                                # triple_id =+ 1
+                                # triples[triple_id] = {}
+                                # triples[triple_id]["subject"] = t.find('subject').text
+                                # triples[triple_id]["predicate"] = t.find('predicate').text
+                                # triples[triple_id]["object"] = t.find('object').text
+                                # print triples[triple_id]["subject"] + "---" + triples[triple_id]["predicate"] + "---" + triples[triple_id]["object"]
+
+                                tsubject = t.find('subject').text
+                                tpredicate = t.find('predicate').text
+                                tobject = t.find('object').text
+                                print tsubject + "---" + tpredicate + "---" + tobject
+
+                                #costruisco la tripla e la metto nella lista delle triple da inserire nelle sib reali
+                                triple_list.append(Triple(URI(tsubject),
+                                                          URI(tpredicate),
+                                                          URI(tobject)))
+
+                # insert the triples into all the sibs
+                for r in self.rsib.keys():
+                    if self.rsib[r]["state"] == "online":
+                        try:
+                            self.nodes[r].insert(triple_list)
+                        except socket.error:
+                            print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
+                            self.rsib[r]["state"] = "offline"
+                            
+                ###################################
+
+
+                print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " inserted a triple in the virtual SIB"
+#                print colored("virtualSIB> ", "red", attrs=["bold"]) + "insertion is enabled but non yet implemented."
 
             else:
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " insertion is forbidden by the virtual SIB"  
