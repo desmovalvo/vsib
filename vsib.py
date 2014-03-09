@@ -15,8 +15,9 @@ CONFIG_FILE = 'vsib_configuration.xml'
 TCP_IP = '127.0.0.1'
 TCP_PORT = 10010
 BUFFER_SIZE = 1024
+WRITE_ENABLED = True
 
-vsib = VirtualSIB.VirtualSIB(TCP_IP, TCP_PORT)
+vsib = VirtualSIB.VirtualSIB(TCP_IP, TCP_PORT, WRITE_ENABLED)
 
 # infinite loop
 while 1:
