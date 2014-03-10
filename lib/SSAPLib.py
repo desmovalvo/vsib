@@ -51,3 +51,12 @@ def reply_to_insert(self, node_id, space_id, transaction_id, write_enabled):
 
     return reply
 
+
+def reply_to_remove(self, node_id, space_id, transaction_id):
+    reply = [SSAP_MESSAGE_TEMPLATE%(node_id,
+                                    space_id,
+                                    "REMOVE",
+                                    transaction_id,
+                                    (SSAP_SUCCESS_PARAM_TEMPLATE%("m3:Success")))]
+
+    return reply

@@ -161,22 +161,13 @@ class VirtualSIB:
                 for r in root.findall('parameter'):
                     if r.get("name")=="insert_graph":
                         for tl in r.findall('triple_list'):
-                            triple_id = 0
                             triple_list = []
                             for t in tl.findall('triple'):
-                                # TODO: togliere questa struttura e usare delle variabili locali e riempire direttamente triple_list
-                                # triple_id =+ 1
-                                # triples[triple_id] = {}
-                                # triples[triple_id]["subject"] = t.find('subject').text
-                                # triples[triple_id]["predicate"] = t.find('predicate').text
-                                # triples[triple_id]["object"] = t.find('object').text
-                                # print triples[triple_id]["subject"] + "---" + triples[triple_id]["predicate"] + "---" + triples[triple_id]["object"]
-
                                 tsubject = t.find('subject').text
                                 tpredicate = t.find('predicate').text
                                 tobject = t.find('object').text
-                                print tsubject + "---" + tpredicate + "---" + tobject
-
+                                print "Triple to insert: < " + tsubject + "---" + tpredicate + "---" + tobject + " >"
+                                                                
                                 #costruisco la tripla e la metto nella lista delle triple da inserire nelle sib reali
                                 triple_list.append(Triple(URI(tsubject),
                                                           URI(tpredicate),
@@ -199,6 +190,50 @@ class VirtualSIB:
 
             else:
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " insertion is forbidden by the virtual SIB"  
+
+
+        #######################################################
+        #
+        # DELETE
+        #
+        #######################################################
+            
+        elif info["transaction_type"] == "REMOVE":
+
+            reply = SSAPLib.reply_to_remove(None,
+                                            info["node_id"], 
+                                            info["space_id"],
+                                            info["transaction_id"])
+            
+            # make the list of triples to remove
+            triples={}
+            for r in root.findall('parameter'):
+                if r.get("name")=="remove_graph":
+                    for tl in r.findall('triple_list'):
+                        triple_list = []
+                        for t in tl.findall('triple'):
+                            tsubject = t.find('subject').text
+                            tpredicate = t.find('predicate').text
+                            tobject = t.find('object').text
+                            print "Triple to remove: < " + tsubject + "---" + tpredicate + "---" + tobject + " >"
+                            
+                            # lista delle triple da rimuovere dalle sib reali
+                            triple_list.append(Triple(URI(tsubject),
+                                                      URI(tpredicate),
+                                                      URI(tobject)))
+
+            # remove the triples from all the sibs
+            for r in self.rsib.keys():
+                if self.rsib[r]["state"] == "online":
+                    try:
+                        self.nodes[r].remove(triple_list)
+                    except socket.error:
+                        print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
+                        self.rsib[r]["state"] = "offline"
+                            
+
+            print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " deleted a triple in the virtual SIB"
+
 
             
         reply_msg = "".join(reply)
