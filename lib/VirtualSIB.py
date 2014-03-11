@@ -52,12 +52,12 @@ class VirtualSIB:
             print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Found a " + rsib[sib_name]["type"] + " sib with IP " + rsib[sib_name]["IP"] + " and port " + str(rsib[sib_name]["port"])
         
         # connection to the SIBs
-        nodes = {}
+        self.nodes = {}
         for r in rsib.keys():
             print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Connecting to " + r
-            nodes[r] = SIBLib.SibLib(rsib[r]["IP"], rsib[r]["port"])
+            self.nodes[r] = SIBLib.SibLib(rsib[r]["IP"], rsib[r]["port"])
             try:
-                nodes[r].join_sib()
+                self.nodes[r].join_sib()
                 rsib[r]["state"] = "online"
             except socket.error:
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
@@ -70,7 +70,11 @@ class VirtualSIB:
         root = ET.fromstring(xml)
         info = {}
         for child in root:
-            info[child.tag] = child.text
+            if child.attrib.has_key("name"):
+                k = child.tag + "_" + str(child.attrib["name"])
+            else:
+                k = child.tag
+            info[k] = child.text
     
         # printing informations
         print colored("VirtualSIB> ", "blue", attrs=["bold"]) + "Received " + info["transaction_type"] + " request from " + str(addr)
@@ -147,20 +151,51 @@ class VirtualSIB:
 
             # TODO: read information about the data inserted
             # TODO: check whether insertion is forbidden
-            if WRITE_ENABLED:
+            if self.write_enabled:
                 
                 reply = SSAPLib.reply_to_insert(None,
                                                 info["node_id"], 
                                                 info["space_id"],
-                                                info["transaction_id"])
+                                                info["transaction_id"],
+                                                self.write_enabled)
 
                 # TODO: insertion on the real SIBs
-#                print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " inserted a triple in the virtual SIB"
+                # print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " inserted a triple in the virtual SIB"
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + "insertion is enabled but non yet implemented."
 
             else:
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " insertion is forbidden by the virtual SIB"  
 
+        #######################################################
+        #
+        # QUERY
+        #
+        #######################################################
+            
+        elif info["transaction_type"] == "QUERY":
+
+            if str(info["parameter_type"]) == "sparql":
+                print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " sent the following SPARQL query:"
+                print str(info["parameter_query"])
+
+                # forwarding the query to the real SIBs
+                results = []
+                for r in self.nodes:
+                    results.append(self.nodes[r].execute_query(info["parameter_query"]))
+
+                # removing duplicates
+#                results = list(set(results))
+
+                # building a reply
+                reply = SSAPLib.reply_to_query(None,
+                                                info["node_id"], 
+                                                info["space_id"],
+                                                info["transaction_id"], results)
+
+            # else:
+            #     # TODO implement rdf query
+            #     print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " sent a rdf query, but they are not yet implemented."
+            #     reply_msg = ""
             
         reply_msg = "".join(reply)
         conn.send(reply_msg)

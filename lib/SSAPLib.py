@@ -13,6 +13,35 @@ SSAP_MESSAGE_TEMPLATE = '''
 SSAP_SUCCESS_PARAM_TEMPLATE = '<parameter name = "status">%s</parameter>'
 SSAP_BNODES_PARAM_TEMPLATE = '<parameter name = "bnodes"><urllist>%s</urllist></parameter>'
 
+### Templates used to build query results
+SSAP_RESULTS_PARAM_TEMPLATE = """
+<parameter name="status">m3:Success</parameter>
+<parameter name="results">
+<sparql xmlns="http://www.w3.org/2005/sparql-results#">    
+%s
+</sparql>
+</parameter>
+"""
+
+SSAP_HEAD_TEMPLATE = """<head>
+%s</head>"""
+
+SSAP_VARIABLE_TEMPLATE = """<variable name="%s"/>
+"""
+
+SSAP_RESULTS_TEMPLATE = """<results>
+%s</results>
+"""
+
+SSAP_RESULT_TEMPLATE = """<result>
+%s</result>
+"""
+
+SSAP_BINDING_TEMPLATE = """<binding name="%s"><uri>%s</uri>
+</binding>
+"""
+
+
 ### The following method is used to send a confirmation
 ### to the JOIN request sent by the client
 def reply_to_join(self, node_id, space_id, transaction_id):
@@ -49,5 +78,40 @@ def reply_to_insert(self, node_id, space_id, transaction_id, write_enabled):
         # TODO: check what kind of response we should send
         pass
 
+    return reply
+
+### The following method is used to send a confirmation
+### to the QUERY request sent by the client
+def reply_to_query(self, node_id, space_id, transaction_id, results):
+
+    print results
+    print
+
+    # building HEAD part of the query results
+    variable_list = []
+    for sib_result in results:
+        for triple in sib_result:
+            for element in triple:    
+                if not SSAP_VARIABLE_TEMPLATE%(str(element[0])) in variable_list:
+                    variable_list.append(SSAP_VARIABLE_TEMPLATE%(str(element[0])))
+    head = SSAP_HEAD_TEMPLATE%(''.join(variable_list))
+    
+    # building RESULTS part of the query results
+    result_string = ""
+    for sib_result in results:
+        for triple in sib_result:
+            binding_string = ""
+            for element in triple:    
+                binding_string = binding_string + SSAP_BINDING_TEMPLATE%(element[0], element[2])
+            result_string = result_string + SSAP_RESULT_TEMPLATE%(binding_string)
+    results_string = SSAP_RESULTS_TEMPLATE%(result_string)
+    body = SSAP_RESULTS_PARAM_TEMPLATE%(head + results_string)
+
+    # finalizing the reply
+    reply = [SSAP_MESSAGE_TEMPLATE%(node_id, 
+                                    space_id, 
+                                    "QUERY",
+                                    transaction_id,
+                                    body)]
     return reply
 
