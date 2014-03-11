@@ -12,7 +12,7 @@ import itertools
 
 # constants
 CONFIG_FILE = 'vsib_configuration.xml'
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 2048
 
 # main class
 class VirtualSIB:
@@ -206,24 +206,57 @@ class VirtualSIB:
                 # forwarding the query to the real SIBs
                 results = []
                 for r in self.nodes:
-                    results.append(self.nodes[r].execute_query(info["parameter_query"])[0])
+                    res = self.nodes[r].execute_sparql_query(info["parameter_query"])
+                    for r in res:
+                        if not r in results:
+                            results.append(r)
 
                 # remove duplicates
-                results = list(results for results,_ in itertools.groupby(results))
                 print colored("virtualSIB> ", "blue", attrs=["bold"]) + "The query returned " + str(len(results)) + " results"
 
                 # building a reply
-                reply = SSAPLib.reply_to_query(None,
+                reply = SSAPLib.reply_to_sparql_query(None,
                                                 info["node_id"], 
                                                 info["space_id"],
                                                 info["transaction_id"], results)
 
             elif str(info["parameter_type"]) == "RDF-M3":
                 # TODO implement rdf query
-                print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " sent a rdf query, but they are not yet implemented."
-                reply_msg = ""
+                print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " sent the following RDF query:"
+                for r in root.findall('parameter'):
+                    if r.get("name")=="query":
+                        for tl in r.findall('triple_list'):
+                            triple_query = []
+                            for t in tl.findall('triple'):
+                                tsubject = t.find('subject').text
+                                tpredicate = t.find('predicate').text
+                                tobject = t.find('object').text
+                                #print "Triple to query: < " + tsubject + "---" + tpredicate + "---" + tobject + " >"
+                                                                
+                                #costruisco la tripla e la metto nella lista delle triple da inserire nelle sib reali
+                                triple_query.append(Triple(URI(tsubject),
+                                                           URI(tpredicate),
+                                                           URI(tobject)))
+                
+                # forwarding the query to the real SIBs
+                results = []
+                for r in self.nodes:
+                    res = self.nodes[r].execute_rdf_query(triple_query)
+                    for t in res:
+                        if not t in results:
+                            results.append(t)
 
+                # TODO remove duplicates
+                print colored("virtualSIB> ", "blue", attrs=["bold"]) + "The query returned " + str(len(results)) + " results"
+                                                                   
+                # building a reply
+                reply = SSAPLib.reply_to_rdf_query(None,
+                                                      info["node_id"], 
+                                                      info["space_id"],
+                                                      info["transaction_id"], 
+                                                      results)
 
+  
         #######################################################
         #
         # DELETE
