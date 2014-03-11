@@ -218,10 +218,10 @@ class VirtualSIB:
                                                 info["space_id"],
                                                 info["transaction_id"], results)
 
-            # else:
-            #     # TODO implement rdf query
-            #     print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " sent a rdf query, but they are not yet implemented."
-            #     reply_msg = ""
+            elif str(info["parameter_type"]) == "RDF-M3":
+                # TODO implement rdf query
+                print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " sent a rdf query, but they are not yet implemented."
+                reply_msg = ""
 
 
         #######################################################

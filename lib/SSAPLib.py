@@ -81,8 +81,8 @@ def reply_to_insert(self, node_id, space_id, transaction_id, write_enabled):
     return reply
 
 ### The following method is used to send a confirmation
-### to the QUERY request sent by the client
-def reply_to_query(self, node_id, space_id, transaction_id, results):
+### to the sparql QUERY request sent by the client
+def reply_to_sparql_query(self, node_id, space_id, transaction_id, results):
 
     print results
 
@@ -111,6 +111,12 @@ def reply_to_query(self, node_id, space_id, transaction_id, results):
                                     transaction_id,
                                     body)]
     return reply
+
+### The following method is used to send a confirmation
+### to the rdf QUERY request sent by the client
+def reply_to_rdf_query(self, node_id, space_id, transaction_id, results):
+    # YET TO IMPLEMENT
+    pass
 
 
 ### The following method is used to send a confirmation

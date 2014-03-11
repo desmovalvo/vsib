@@ -4,6 +4,7 @@ from termcolor import colored
 from xml.etree import ElementTree as ET
 import subprocess
 import sys
+import time
 
 # constants
 CONF_FILE = "../vsib_configuration.xml"
@@ -25,17 +26,21 @@ for r in root.findall('SIB'):
     rsib[sib_name]["port"] = int(r.find('port').text)
     rsib[sib_name]["type"] = r.find('type').text
 
-# starting the SIBs
-command = "redsibd"
-print colored("realsib_starter> ", "green", attrs=["bold"]) + "Starting redsibd"
-subprocess.Popen(command)
-
 nodes = {}
 for r in rsib.keys():
+
+    # starting redsib
+    command = "redsibd"
+    print colored("realsib_starter> ", "green", attrs=["bold"]) + "Starting redsibd"
+    subprocess.Popen(command)
+
+    # a little pause...
+    time.sleep(5)
+
+    # starting sib-tcp
     print colored("realsib_starter> ", "green", attrs=["bold"]) + "Starting sib-tcp for sib " + r
     command = ["sib-tcp", "-p", str(rsib[r]["port"])]
     subprocess.Popen(command)
-
 	
 # waiting for the quit signal
 while True:

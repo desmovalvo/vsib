@@ -58,7 +58,7 @@ class SibLib(KP):
         return triple
 
     # execute_query: method to execute a query on the sib
-    def execute_query(self, query):
+    def execute_sparql_query(self, query):
         PREFIXES = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -70,8 +70,14 @@ PREFIX ns: <""" + ns + ">"
         self.CloseQueryTransaction(qt)
         return result
 
+    def execute_rdf_query(self, query):
+        self.rdf_query = self.CreateQueryTransaction(self.ss_handle)
+        self.result_rdf_query = self.rdf_query.rdf_query(query)
+        self.CloseQueryTransaction(self.rdf_query)
+        print str(self.result_rdf_query)
+
     # load_ontology: inject an ontology saved on a owl file into the sib
     def load_ontology(self, owl_file):
         ins = self.CreateInsertTransaction(self.ss_handle)
-        ins.send(owl_file, encoding = "RDF-XML")
+        ins.send(owl_file, encoding = "rdf-xml", confirm = True)
         self.CloseInsertTransaction(ins)
