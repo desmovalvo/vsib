@@ -53,12 +53,12 @@ class VirtualSIB:
         
         # connection to the SIBs
         self.nodes = {}
-        for r in rsib.keys():
+        for r in self.rsib.keys():
             print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Connecting to " + r
-            self.nodes[r] = SIBLib.SibLib(rsib[r]["IP"], rsib[r]["port"])
+            self.nodes[r] = SIBLib.SibLib(self.rsib[r]["IP"], self.rsib[r]["port"])
             try:
                 self.nodes[r].join_sib()
-                rsib[r]["state"] = "online"
+                self.rsib[r]["state"] = "online"
             except socket.error:
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
                 self.rsib[r]["state"] = "offline"
