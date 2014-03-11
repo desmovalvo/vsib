@@ -7,7 +7,7 @@ import sys
 from termcolor import colored
 from lib import SIBLib
 from xml.etree import ElementTree as ET
-from lib import SSAPLib
+import SSAPLib
 
 # constants
 CONFIG_FILE = 'vsib_configuration.xml'
@@ -42,14 +42,14 @@ class VirtualSIB:
         root = tree.getroot()
         
         # create and fill a dict to store the info about real SIBs
-        rsib = {}
+        self.rsib = {}
         for r in root.findall('SIB'):
             sib_name = r.find('name').text
-            rsib[sib_name] = {}
-            rsib[sib_name]["IP"] = r.find('IP').text
-            rsib[sib_name]["port"] = int(r.find('port').text)
-            rsib[sib_name]["type"] = r.find('type').text
-            print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Found a " + rsib[sib_name]["type"] + " sib with IP " + rsib[sib_name]["IP"] + " and port " + str(rsib[sib_name]["port"])
+            self.rsib[sib_name] = {}
+            self.rsib[sib_name]["IP"] = r.find('IP').text
+            self.rsib[sib_name]["port"] = int(r.find('port').text)
+            self.rsib[sib_name]["type"] = r.find('type').text
+            print colored("virtualSIB> ", "blue", attrs=["bold"]) + "Found a " + self.rsib[sib_name]["type"] + " sib with IP " + self.rsib[sib_name]["IP"] + " and port " + str(self.rsib[sib_name]["port"])
         
         # connection to the SIBs
         self.nodes = {}
@@ -61,8 +61,7 @@ class VirtualSIB:
                 rsib[r]["state"] = "online"
             except socket.error:
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
-                rsib[r]["state"] = "offline"
-
+                self.rsib[r]["state"] = "offline"
 
     def react_to_message(self, xml, conn, addr):
 
@@ -149,8 +148,6 @@ class VirtualSIB:
             
         elif info["transaction_type"] == "INSERT":
 
-            # TODO: read information about the data inserted
-            # TODO: check whether insertion is forbidden
             if self.write_enabled:
                 
                 reply = SSAPLib.reply_to_insert(None,
@@ -159,12 +156,39 @@ class VirtualSIB:
                                                 info["transaction_id"],
                                                 self.write_enabled)
 
-                # TODO: insertion on the real SIBs
-                # print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " inserted a triple in the virtual SIB"
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + "insertion is enabled but non yet implemented."
+
+                # make the list of triples to insert
+                triples={}
+                for r in root.findall('parameter'):
+                    if r.get("name")=="insert_graph":
+                        for tl in r.findall('triple_list'):
+                            triple_list = []
+                            for t in tl.findall('triple'):
+                                tsubject = t.find('subject').text
+                                tpredicate = t.find('predicate').text
+                                tobject = t.find('object').text
+                                print "Triple to insert: < " + tsubject + "---" + tpredicate + "---" + tobject + " >"
+                                                                
+                                #costruisco la tripla e la metto nella lista delle triple da inserire nelle sib reali
+                                triple_list.append(Triple(URI(tsubject),
+                                                          URI(tpredicate),
+                                                          URI(tobject)))
+
+                # insert the triples into all the sibs
+                for r in self.rsib.keys():
+                    if self.rsib[r]["state"] == "online":
+                        try:
+                            self.nodes[r].insert(triple_list)
+                        except socket.error:
+                            print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
+                            self.rsib[r]["state"] = "offline"
+                            
+                print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " inserted a triple in the virtual SIB"
 
             else:
                 print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " insertion is forbidden by the virtual SIB"  
+
 
         #######################################################
         #
@@ -196,6 +220,49 @@ class VirtualSIB:
             #     # TODO implement rdf query
             #     print colored("virtualSIB> ", "red", attrs=["bold"]) + str(addr) + " sent a rdf query, but they are not yet implemented."
             #     reply_msg = ""
+
+
+        #######################################################
+        #
+        # DELETE
+        #
+        #######################################################
             
+        elif info["transaction_type"] == "REMOVE":
+
+            reply = SSAPLib.reply_to_remove(None,
+                                            info["node_id"], 
+                                            info["space_id"],
+                                            info["transaction_id"])
+            
+            # make the list of triples to remove
+            triples={}
+            for r in root.findall('parameter'):
+                if r.get("name")=="remove_graph":
+                    for tl in r.findall('triple_list'):
+                        triple_list = []
+                        for t in tl.findall('triple'):
+                            tsubject = t.find('subject').text
+                            tpredicate = t.find('predicate').text
+                            tobject = t.find('object').text
+                            print "Triple to remove: < " + tsubject + "---" + tpredicate + "---" + tobject + " >"
+                            
+                            # lista delle triple da rimuovere dalle sib reali
+                            triple_list.append(Triple(URI(tsubject),
+                                                      URI(tpredicate),
+                                                      URI(tobject)))
+
+            # remove the triples from all the sibs
+            for r in self.rsib.keys():
+                if self.rsib[r]["state"] == "online":
+                    try:
+                        self.nodes[r].remove(triple_list)
+                    except socket.error:
+                        print colored("virtualSIB> ", "red", attrs=["bold"]) + "SIB " + r + " is not online"
+                        self.rsib[r]["state"] = "offline"
+                            
+
+            print colored("virtualSIB> ", "blue", attrs=["bold"]) + str(addr) + " deleted a triple in the virtual SIB"
+
         reply_msg = "".join(reply)
         conn.send(reply_msg)

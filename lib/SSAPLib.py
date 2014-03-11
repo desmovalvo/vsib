@@ -115,3 +115,14 @@ def reply_to_query(self, node_id, space_id, transaction_id, results):
                                     body)]
     return reply
 
+
+### The following method is used to send a confirmation
+### to the REMOVE request sent by the client
+def reply_to_remove(self, node_id, space_id, transaction_id):
+    reply = [SSAP_MESSAGE_TEMPLATE%(node_id,
+                                    space_id,
+                                    "REMOVE",
+                                    transaction_id,
+                                    (SSAP_SUCCESS_PARAM_TEMPLATE%("m3:Success")))]
+
+    return reply
