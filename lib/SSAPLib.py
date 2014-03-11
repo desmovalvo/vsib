@@ -85,25 +85,22 @@ def reply_to_insert(self, node_id, space_id, transaction_id, write_enabled):
 def reply_to_query(self, node_id, space_id, transaction_id, results):
 
     print results
-    print
 
     # building HEAD part of the query results
     variable_list = []
-    for sib_result in results:
-        for triple in sib_result:
-            for element in triple:    
-                if not SSAP_VARIABLE_TEMPLATE%(str(element[0])) in variable_list:
-                    variable_list.append(SSAP_VARIABLE_TEMPLATE%(str(element[0])))
+    for triple in results:
+        for element in triple:    
+            if not SSAP_VARIABLE_TEMPLATE%(str(element[0])) in variable_list:
+                variable_list.append(SSAP_VARIABLE_TEMPLATE%(str(element[0])))
     head = SSAP_HEAD_TEMPLATE%(''.join(variable_list))
     
     # building RESULTS part of the query results
     result_string = ""
-    for sib_result in results:
-        for triple in sib_result:
-            binding_string = ""
-            for element in triple:    
-                binding_string = binding_string + SSAP_BINDING_TEMPLATE%(element[0], element[2])
-            result_string = result_string + SSAP_RESULT_TEMPLATE%(binding_string)
+    for triple in results:
+        binding_string = ""
+        for element in triple:    
+            binding_string = binding_string + SSAP_BINDING_TEMPLATE%(element[0], element[2])
+        result_string = result_string + SSAP_RESULT_TEMPLATE%(binding_string)
     results_string = SSAP_RESULTS_TEMPLATE%(result_string)
     body = SSAP_RESULTS_PARAM_TEMPLATE%(head + results_string)
 

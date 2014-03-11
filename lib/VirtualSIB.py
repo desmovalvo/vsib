@@ -8,6 +8,7 @@ from termcolor import colored
 from lib import SIBLib
 from xml.etree import ElementTree as ET
 import SSAPLib
+import itertools
 
 # constants
 CONFIG_FILE = 'vsib_configuration.xml'
@@ -205,10 +206,11 @@ class VirtualSIB:
                 # forwarding the query to the real SIBs
                 results = []
                 for r in self.nodes:
-                    results.append(self.nodes[r].execute_query(info["parameter_query"]))
+                    results.append(self.nodes[r].execute_query(info["parameter_query"])[0])
 
-                # removing duplicates
-#                results = list(set(results))
+                # remove duplicates
+                results = list(results for results,_ in itertools.groupby(results))
+                print colored("virtualSIB> ", "blue", attrs=["bold"]) + "The query returned " + str(len(results)) + " results"
 
                 # building a reply
                 reply = SSAPLib.reply_to_query(None,
