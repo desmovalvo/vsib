@@ -163,3 +163,14 @@ def reply_to_remove(self, node_id, space_id, transaction_id):
                                     (SSAP_SUCCESS_PARAM_TEMPLATE%("m3:Success")))]
 
     return reply
+
+### The following method is used to send a confirmation
+### to the REGISTER request sent by the client
+def reply_to_register(self, node_id, space_id, transaction_id):
+    reply = [SSAP_MESSAGE_TEMPLATE%(node_id,
+                                    space_id,
+                                    "REGISTER",
+                                    transaction_id,
+                                    (SSAP_SUCCESS_PARAM_TEMPLATE%("m3:Success")))]
+
+    return reply
