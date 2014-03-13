@@ -25,6 +25,7 @@ while 1:
     try:
         # accept incoming informations
         conn, addr = vsib.s.accept()
+        print type(conn)
         print colored("virtualSIB> ", "blue", attrs=["bold"]) + 'Incoming connection address from ' + str(addr)
 
         # parse received message
