@@ -1,0 +1,12 @@
+<sibs>
+  <SIB>
+    <name>vsib1</name>
+    <IP>127.0.0.1</IP>
+    <port>10020</port>
+  </SIB>
+  <SIB>
+    <name>vsib2</name>
+    <IP>127.0.0.1</IP>
+    <port>10030</port>
+  </SIB>
+</sibs>
