@@ -74,7 +74,8 @@ PREFIX ns: <""" + ns + ">"
         self.rdf_query = self.CreateQueryTransaction(self.ss_handle)
         self.result_rdf_query = self.rdf_query.rdf_query(query)
         self.CloseQueryTransaction(self.rdf_query)
-        print str(self.result_rdf_query)
+#        print str(self.result_rdf_query)
+        return self.result_rdf_query
 
     # load_ontology: inject an ontology saved on a owl file into the sib
     def load_ontology(self, owl_file):

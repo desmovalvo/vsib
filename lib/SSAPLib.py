@@ -14,13 +14,34 @@ SSAP_SUCCESS_PARAM_TEMPLATE = '<parameter name = "status">%s</parameter>'
 SSAP_BNODES_PARAM_TEMPLATE = '<parameter name = "bnodes"><urllist>%s</urllist></parameter>'
 
 ### Templates used to build query results
-SSAP_RESULTS_PARAM_TEMPLATE = """
+SSAP_RESULTS_SPARQL_PARAM_TEMPLATE = """
 <parameter name="status">m3:Success</parameter>
 <parameter name="results">
 <sparql xmlns="http://www.w3.org/2005/sparql-results#">    
 %s
 </sparql>
 </parameter>
+"""
+
+SSAP_RESULTS_RDF_PARAM_TEMPLATE = """
+<parameter name="status">m3:Success</parameter>
+<parameter name="results">
+%s
+</parameter>
+"""
+
+SSAP_TRIPLE_TEMPLATE = """
+<triple>
+<subject type="uri">%s</subject>
+<predicate>%s</predicate>
+<object type="uri">%s</object>
+</triple>
+"""
+
+SSAP_TRIPLE_LIST_TEMPLATE = """
+<triple_list>
+%s
+</triple_list>
 """
 
 SSAP_HEAD_TEMPLATE = """<head>
@@ -102,7 +123,7 @@ def reply_to_sparql_query(self, node_id, space_id, transaction_id, results):
             binding_string = binding_string + SSAP_BINDING_TEMPLATE%(element[0], element[2])
         result_string = result_string + SSAP_RESULT_TEMPLATE%(binding_string)
     results_string = SSAP_RESULTS_TEMPLATE%(result_string)
-    body = SSAP_RESULTS_PARAM_TEMPLATE%(head + results_string)
+    body = SSAP_RESULTS_SPARQL_PARAM_TEMPLATE%(head + results_string)
 
     # finalizing the reply
     reply = [SSAP_MESSAGE_TEMPLATE%(node_id, 
@@ -115,10 +136,23 @@ def reply_to_sparql_query(self, node_id, space_id, transaction_id, results):
 ### The following method is used to send a confirmation
 ### to the rdf QUERY request sent by the client
 def reply_to_rdf_query(self, node_id, space_id, transaction_id, results):
-    # YET TO IMPLEMENT
-    pass
 
+    tr = ""
+    for el in results:
+        tr = tr + SSAP_TRIPLE_TEMPLATE%(el[0], el[1], el[2])
+            
+    body = SSAP_RESULTS_RDF_PARAM_TEMPLATE%(SSAP_TRIPLE_LIST_TEMPLATE%(tr))
+    
+    # finalizing the reply
+    reply = [SSAP_MESSAGE_TEMPLATE%(node_id, 
+                                    space_id, 
+                                    "QUERY",
+                                    transaction_id,
+                                    body)]
+    #print str(reply[0])
+    return reply
 
+  
 ### The following method is used to send a confirmation
 ### to the REMOVE request sent by the client
 def reply_to_remove(self, node_id, space_id, transaction_id):
