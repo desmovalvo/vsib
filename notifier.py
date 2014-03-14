@@ -98,7 +98,7 @@ class Notifier():
             print colored("Notifier > ", "blue", attrs=["bold"]) + "Received confirm message!"
             print response
         
-        self.s_vsib.close()
+        #self.s_vsib.close()
 
     def listening():
         print "In attesa di messaggi di insert/remove/query/subscription da parte di un KP..."
@@ -107,14 +107,14 @@ class Notifier():
 
             try:
                 # accept connections
-                self.s_vsib.listen(1)
+                #self.s_vsib.listen(1)
 
                 # accept incoming informations
-                conn, addr = self.s_vsib.accept()
-                print colored("Notifier> ", "blue", attrs=["bold"]) + 'Incoming connection address from ' + str(addr)
+                #conn, addr = self.s_vsib.accept()
+                #print colored("Notifier> ", "blue", attrs=["bold"]) + 'Incoming connection address from ' + str(addr)
                 
                 # parse received message
-                data = conn.recv(BUFFER_SIZE)
+                data = self.s_vsib.recv(BUFFER_SIZE)
                 if not data: break    
                 
                 print data
