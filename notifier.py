@@ -38,33 +38,31 @@ class Notifier():
         for v in root.findall('SIB'):
             sib_name = v.find('name').text
             self.vsib[sib_name] = {}
-            self.vsib[sib_name]["IP"] = v.find('IP').text
+            self.vsib[sib_name]["IP"] = v.find('IP').text        
             self.vsib[sib_name]["port"] = int(v.find('port').text)
             self.vsib[sib_name]["id"] = i
-            print colored("Notifier > ", "blue", attrs=["bold"]) + "[" + str(i) + "] " + sib_name + " with IP " + self.vsib[sib_name]["IP"] + " and port " + str(self.vsib[sib_name]["port"])
+            print colored("Notifier > ", "blue", attrs=["bold"]) + "[" + sib_name + "]" + " with IP " + self.vsib[sib_name]["IP"] + " and port " + str(self.vsib[sib_name]["port"])
             i += 1
-
+            
+        # selection of a SIB
         sib = raw_input("Select a SIB > ")
-
-        found = False
-        for v in self.vsib.keys():
-            if int(sib) == int( self.vsib[v]["id"]):
-                found = True
-                self.sib_name = v
-                break
-
-        if found == False:
+        
+        if self.vsib.has_key(sib) == False:
             print colored("Notifier > ", "blue", attrs=["bold"]) + "Don't exsists a virtual sib with id " + str(sib)
 
         else:
+
             # avvio la connessione con la virtual sib scelta
             # create a tcp socket 
             s = socket(AF_INET, SOCK_STREAM)
             
-            # connect to the virtual sib server 
-            s.connect((self.vsib[sib_name]["IP"], self.vsib[sib_name]["port"]))
+            # connect to the virtual sib server             
+            s.connect((self.vsib[sib]["IP"], self.vsib[sib]["port"]))
     
             # gli invio il messaggio SSAP REGISTER
             msg_reg = SSAP_REGISTER_REQUEST_TEMPLATE%(self.transaction_id, self.node_id)
-            print str(msg_reg)
             s.send(msg_reg)
+
+        # TODO: controllare che arrivi il messaggio di conferma register
+        # TODO: ritornare true in caso affermativo
+        # TODO: creare un metodo che si metta in ascolto sulla socket in attesa di messaggi

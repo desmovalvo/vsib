@@ -318,9 +318,6 @@ class VirtualSIB:
             # check whether the SIB is already registered
             if not self.rsib.has_key(info["node_id"]):
                 self.rsib[info["node_id"]] = {}
-                print colored("virtualSIB> ", "blue", attrs=["bold"]) + "REGISTER requrest from sib " + str(addr)
-            else:
-                print colored("virtualSIB> ", "blue", attrs=["bold"]) + "sib " + str(addr) + " is alive"
             
             # update informations about the real sib
             self.rsib[info["node_id"]]["status"] = "ONLINE"
