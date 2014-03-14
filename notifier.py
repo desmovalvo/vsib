@@ -36,8 +36,8 @@ class Notifier():
     def __init__(self, sib_ip, sib_port):
         self.node_id = str(uuid.uuid4())
         self.transaction_id = 0
-
-        pass
+        self.sib_ip = sib_ip
+        self.sib_port = sib_port
 
     def register(self):
 
@@ -68,7 +68,8 @@ class Notifier():
             # avvio la connessione con la virtual sib scelta
             # create a tcp socket 
             self.s_vsib = socket(AF_INET, SOCK_STREAM)
-            
+            self.s_vsib.bind(("127.0.0.1", 8010))
+                    
             # connect to the virtual sib server             
             self.s_vsib.connect((self.vsib[sib]["IP"], self.vsib[sib]["port"]))
     
@@ -96,22 +97,28 @@ class Notifier():
         if (info["message_type"] == "CONFIRM") & (info["node_id"] == str(self.node_id)) & (info["transaction_type"] == "REGISTER") & (info["parameter"] == "m3:Success"):
             print colored("Notifier > ", "blue", attrs=["bold"]) + "Received confirm message!"
             print response
-
-
-
+        
+        self.s_vsib.close()
 
     def listening():
-        print "In attesa di messaggi di join/insert/remove/query/subscription/leave da parte di un KP..."
-        # while 1:
+        print "In attesa di messaggi di insert/remove/query/subscription da parte di un KP..."
+        # infinite loop
+        while 1:
 
-        #     try:
-        #         # parse received message
-        #         msg = self.s_vsib.recv(BUFFER_SIZE)
-        #         if not data: break    
-        #         # TODO check message: creare un metodo per il check
-        #         check_msg()
-        #     except KeyboardInterrupt:
-        #         sys.exit(0)
+            try:
+                # accept connections
+                self.s_vsib.listen(1)
 
-
+                # accept incoming informations
+                conn, addr = self.s_vsib.accept()
+                print colored("Notifier> ", "blue", attrs=["bold"]) + 'Incoming connection address from ' + str(addr)
+                
+                # parse received message
+                data = conn.recv(BUFFER_SIZE)
+                if not data: break    
+                
+                print data
+                
+            except KeyboardInterrupt:
+                sys.exit(0)
 
